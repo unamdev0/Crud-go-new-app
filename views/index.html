@@ -6,6 +6,8 @@
     </head>
     <body>
         <h1>Hello world from template</h1>
-        {{.URL}}
+        {{.URL}} {{if isset(Key)}}
+        <p>Session Variables <strong>{{Key}}</strong></p>
+        {{end}}
     </body>
 </html>

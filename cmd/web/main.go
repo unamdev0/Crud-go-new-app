@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/CloudyKit/jet/v6"
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
+	"github.com/unamdev0/go-crud-app/models"
 	"github.com/upper/db/v4"
 	"github.com/upper/db/v4/adapter/postgresql"
 
@@ -27,6 +29,7 @@ type application struct {
 	infoLog *log.Logger
 	view    *jet.Set
 	session *scs.SessionManager
+	Models  models.Models
 }
 
 type server struct {
@@ -36,6 +39,10 @@ type server struct {
 }
 
 func main() {
+
+	isNotMigrated := flag.Bool("migrate", false, "Should migrate - drop all tables")
+
+	flag.Parse()
 
 	server := server{
 		host: "localhost",
@@ -70,12 +77,24 @@ func main() {
 		}
 	}(upper)
 
+	if *isNotMigrated {
+		fmt.Println("Running Migration")
+		err := migrate(upper)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	}
+
 	app := &application{
 		appName: "News Room",
 		server:  server,
 		debug:   true,
-		infoLog: log.New(os.Stdout, "INFO-LOG\t", log.Ltime|log.Ldate|log.Lshortfile),
 		errLog:  log.New(os.Stderr, "ERROR-LOG\t", log.Ltime|log.Ldate|log.Llongfile),
+		infoLog: log.New(os.Stdout, "INFO-LOG\t", log.Ltime|log.Ldate|log.Lshortfile),
+		view:    &jet.Set{},
+		session: &scs.SessionManager{},
+		Models:  models.New(upper),
 	}
 
 	//init session
@@ -114,4 +133,17 @@ func openDB(dsn string) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func migrate(db db.Session) error {
+
+	script, err := os.ReadFile("./migrations/tables.sql")
+	if err != nil {
+		log.Fatal(err)
+
+	}
+	_, err = db.SQL().Exec(string(script))
+
+	return err
+
 }

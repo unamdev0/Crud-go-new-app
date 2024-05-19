@@ -18,6 +18,9 @@ func (a *application) routes() http.Handler {
 	mux.Use(middleware.Recoverer)
 	mux.Use(a.LoadSession)
 
+	fileServer := http.FileServer(http.Dir("./public"))
+	mux.Handle("/public/*", http.StripPrefix("/public", fileServer))
+
 	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
 
 		a.session.Put(r.Context(), "Key", "Value")

@@ -23,6 +23,10 @@ type UserModel struct {
 	db db.Session
 }
 
+func (m UserModel) Table() string {
+	return "users"
+}
+
 func (m UserModel) GetById(id int) (*User, error) {
 
 	var u User
@@ -85,7 +89,7 @@ func (m UserModel) Insert(u *User) error {
 	return nil
 }
 
-func (u *User) ComparePassword(plainPassword string) (bool, err) {
+func (u *User) ComparePassword(plainPassword string) (bool, error) {
 
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(plainPassword))
 	if err != nil {

@@ -20,6 +20,14 @@ func (a *application) defaultData(td *TemplateData, r *http.Request) *TemplateDa
 
 	td.URL = a.server.url
 
+	if a.session != nil {
+		if a.session.Exists(r.Context(), sessionKeyUserId) {
+			td.IsAuthenticated = true
+			td.AuthUser = a.session.GetString(r.Context(), sessionKeyUserName)
+		}
+		td.Flash = a.session.GetString(r.Context(), "flash")
+
+	}
 	return td
 }
 

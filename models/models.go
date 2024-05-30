@@ -13,20 +13,21 @@ var (
 	ErrorDuplicateEmail      = errors.New("Email id already exists")
 	ErrorAccountNotActivated = errors.New("Account isn't activated")
 	ErrorInvalidLogin        = errors.New("Invalid Login attempt")
-	ErrDuplicateTitle = errors.New("title already exist in database")
-	ErrDuplicateVotes = errors.New("you already voted")
-
+	ErrDuplicateTitle        = errors.New("title already exist in database")
+	ErrDuplicateVotes        = errors.New("you already voted")
 )
 
 type Models struct {
-	Users UserModel
-	Posts  PostModel
+	Users    UserModel
+	Posts    PostModel
+	Comments CommentsModel
 }
 
 func New(db db.Session) Models {
 	return Models{
-		Users: UserModel{db: db}
-		Posts: PostModel{db:db}
+		Users:    UserModel{db: db},
+		Posts:    PostModel{db: db},
+		Comments: CommentsModel{db: db},
 	}
 }
 

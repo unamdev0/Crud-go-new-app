@@ -19,6 +19,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const (
+	sessionKeyUserId   = "userId"
+	sessionKeyUserName = "userName"
+)
+
 // Contains all the basic app info
 
 type application struct {
@@ -92,7 +97,6 @@ func main() {
 		debug:   true,
 		errLog:  log.New(os.Stderr, "ERROR-LOG\t", log.Ltime|log.Ldate|log.Llongfile),
 		infoLog: log.New(os.Stdout, "INFO-LOG\t", log.Ltime|log.Ldate|log.Lshortfile),
-		view:    &jet.Set{},
 		session: &scs.SessionManager{},
 		Models:  models.New(upper),
 	}
@@ -106,6 +110,7 @@ func main() {
 	app.session.Store = postgresstore.New(database)
 
 	if app.debug {
+
 		app.view = jet.NewSet(jet.NewOSFileSystemLoader("./views"), jet.InDevelopmentMode())
 	} else {
 		app.view = jet.NewSet(jet.NewOSFileSystemLoader("./views"))
@@ -116,7 +121,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("HEMLOOO")
 }
 
 func openDB(dsn string) (*sql.DB, error) {

@@ -1,8 +1,13 @@
 package models
 
 import (
+	"database/sql"
+	"errors"
+	"net/url"
+	"strings"
 	"time"
 
+	"github.com/golang-module/carbon"
 	"github.com/upper/db/v4"
 )
 
@@ -36,4 +41,117 @@ type Post struct {
 
 type PostModel struct {
 	db db.Session
+}
+
+func (m PostModel) Table() string {
+	return "posts"
+}
+
+func (m PostModel) GetById(id int) (*Post, error) {
+
+	var p Post
+	err := m.db.Collection("posts").Find(db.Cond{"id": id}).One(&p)
+	if err != nil {
+
+		if errors.Is(err, db.ErrNoMoreRows) {
+			return nil, ErrorNoMoreRows
+		}
+
+		return nil, err
+
+	}
+
+	return &p, err
+
+}
+
+func (m PostModel) GetAll(f Filter) ([]Post, Metadata, error) {
+
+	var posts []Post
+	var rows *sql.Rows
+	var err error
+	meta := Metadata{}
+
+	q := f.applyTemplate(queryTemplate)
+
+	if len(f.Query) > 0 {
+		rows, err = m.db.SQL().Query(q, "%"+strings.ToLower(f.Query)+"%", f.limit(), f.offset())
+	} else {
+		rows, err = m.db.SQL().Query(q, f.limit(), f.offset())
+	}
+
+	if err != nil {
+
+		return nil, meta, err
+	}
+
+	iter := m.db.SQL().NewIterator(rows)
+	err = iter.All(&posts)
+	if err != nil {
+
+		return nil, meta, err
+	}
+
+	if len(posts) == 0 {
+		return nil, meta, nil
+	}
+
+	first := posts[0]
+
+	return posts, CalculateMetadata(first.TotalRecords, f.Page, f.PageSize), nil
+
+}
+
+func (m PostModel) Vote(postId, userId int) error {
+
+	col := m.db.Collection("votes")
+
+	_, err := col.Insert(map[string]int{
+		"post_id": postId,
+
+		"user_id": userId,
+	})
+
+	if err != nil {
+
+		if errHasDuplicate(err, "votes_pkey") {
+
+			return ErrDuplicateVotes
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (p *Post) DateHuman() string {
+	return carbon.Time2Carbon(p.CreatedAt).DiffForHumans()
+}
+
+func (p *Post) Host() string {
+	ur, err := url.Parse(p.Url)
+
+	if err != nil {
+		return ""
+	}
+	return ur.Host
+}
+
+func (m PostModel) Insert(title, url string, userId int) (*Post, error) {
+
+	post := Post{
+		Title:     title,
+		Url:       url,
+		UserID:    userId,
+		CreatedAt: time.Now(),
+	}
+	col := m.db.Collection("posts")
+	res, err := col.Insert(post)
+	if err != nil {
+		return nil, err
+	}
+
+	post.ID = convertUpperIDToInt(res.ID())
+
+	return &post, nil
 }

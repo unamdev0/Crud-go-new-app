@@ -19,6 +19,12 @@ func (a *application) routes() http.Handler {
 	mux.Get("/", a.homeHandler)
 	mux.Get("/comment/{postID}", a.commentHandler)
 
+	mux.Get("/login", a.loginHandler)
+	mux.Post("/login", a.loginPostHandler)
+	mux.Get("/signup", a.signUpHandler)
+	mux.Post("/signup", a.signPostUpHandler)
+	mux.Get("/logout", a.authRequired(a.logoutHandler))
+
 	fileServer := http.FileServer(http.Dir("./public"))
 	mux.Handle("/public/*", http.StripPrefix("/public", fileServer))
 
